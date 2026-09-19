@@ -68,6 +68,8 @@ public class AppServiceImpl implements AppService {
         System.out.print("Enter password: ");
         String Password = s.next();
 
+
+
         Account account = new Account(Username, Password);
         Account existedAccount = accountService.getAccountByUsernameAndPassword(account);
         if (existedAccount == null) System.out.println("Account does not exist.please check credentials ");
@@ -88,24 +90,115 @@ public class AppServiceImpl implements AppService {
         System.out.print("Enter password: ");
         String regPassword = s.next();
 
+        System.out.print("Enter age: ");
+        int age = s.nextInt();
+
+        System.out.print("Enter email: ");
+        String email = s.next();
+
+        System.out.print("Enter phone number: ");
+        String phoneNumber = s.next();
+
 
 
 
 
         // Create the account object inline
-        Account newAccount = new Account(regUsername, regPassword);
-        accountService.createAccount(newAccount);
+        Account newAccount = new Account(regUsername, regPassword, age, email, phoneNumber);
+        Account createdAccount = accountService.createAccount(newAccount);
 
-        if (newAccount == null){
-            System.out.println("Account failed to create,username already exists ");
+        if (createdAccount == null) {
+            System.out.println("Account failed to create, username already exists.");
+            return;
         }
 
         System.out.println("Account created successfully");
-        mainProfile(newAccount);
+        mainProfile(createdAccount);
     }
 
     private void mainProfile(Account account){
         System.out.println("---- Choose one of the Servicess :------");
         System.out.println("1.Deposit   2.Withdraw     3. Transfer   4. Show Balance   5. Show Details  6. Change Password    7. Logout  ");
+        int choose = s.nextInt();
+
+        switch (choose) {
+            case (1):
+                System.out.println("Please enter amount to deposit: ");
+                if (s.hasNextDouble()) {
+                    double amount = s.nextDouble();
+
+                    try {
+                        accountService.deposit(account, amount);
+                        System.out.println("Deposit successful");
+                    } catch (IllegalArgumentException e) {
+                        System.out.println(e.getMessage());
+                    }
+                } else {
+                    System.out.println("Please enter a valid number.");
+                    s.next();
+                }
+
+            case (2):
+                if (s.hasNextDouble()) {
+                    double amount = s.nextDouble();
+
+                    try {
+                        accountService.withdraw(account, amount);
+                        System.out.println("Withdraw Successful");
+                    }
+                    catch (IllegalArgumentException e) {
+                        System.out.println(e.getMessage());
+                    }
+
+                } else {
+                    System.out.println("Please enter a valid number");
+                    s.next();
+                }
+
+            case 3:
+                System.out.println("Please enter account to transfer:");
+                String username = s.next();
+
+                try {
+                    Account receiver = accountService.getAccountByUsername(username);
+
+                    System.out.println("Enter amount to transfer:");
+
+                    if (s.hasNextDouble()) {
+                        double amount = s.nextDouble();
+
+                        accountService.transfer(account, amount, receiver);
+                        System.out.println("Amount transferred successfully");
+                    } else {
+                        System.out.println("Please enter a valid number");
+                        s.next();
+                    }
+
+                } catch (IllegalArgumentException e) {
+                    System.out.println(e.getMessage());
+                }
+                break;
+
+            case 4 :
+                System.out.println("Balance available: " + accountService.getBalance(account));
+
+
+
+
+            case 5 :     System.out.println("\n----- Account Details -----");
+                System.out.println("Username: " + account.getUsername());
+                System.out.println("Email: " + account.getEmail());
+                System.out.println("Phone Number: " + account.getPhoneNumber());
+                System.out.println("Age: " + account.getAge());
+                System.out.println("Balance: " + account.getBalance());
+                break;
+
+
+
+
+
+        }
+
+
     }
 }
