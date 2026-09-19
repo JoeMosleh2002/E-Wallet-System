@@ -2,6 +2,8 @@ package service;
 
 import Model.Account;
 import Model.WalletSystem;
+
+import javax.swing.*;
 import java.util.Scanner;
 
 
@@ -26,25 +28,12 @@ public class AppServiceImpl implements AppService {
                 int choice = s.nextInt();
                 switch (choice) {
                     case 1:
-                        System.out.println("Login Features");
+                       login();
                         break;
 
 
                     case 2:
-                        System.out.println("\n--- Signup ---");
-                        System.out.print("Enter username: ");
-                        String regUsername = s.next();
-
-                        System.out.print("Enter password: ");
-                        String regPassword = s.next();
-
-
-
-                        // Create the account object inline
-                        Account newAccount = new Account(regUsername, regPassword);
-                        accountService.createAccount(newAccount);
-
-                        System.out.println("Account created successfully for: " + newAccount.getUsername());
+                       signup();
                         break;
 
 
@@ -68,5 +57,55 @@ public class AppServiceImpl implements AppService {
                 s.next(); // Consumes the bad token so Scanner doesn't loop infinitely
             }
         }
+    }
+
+    private  void login() {
+
+        System.out.println("\n--- Login ---");
+        System.out.print("Enter username: ");
+        String Username = s.next();
+
+        System.out.print("Enter password: ");
+        String Password = s.next();
+
+        Account account = new Account(Username, Password);
+        Account existedAccount = accountService.getAccountByUsernameAndPassword(account);
+        if (existedAccount == null) System.out.println("Account does not exist.please check credentials ");
+
+
+        else {
+            System.out.println("Successful Login");
+            mainProfile(existedAccount);
+        }
+
+    }
+    // sign up function
+    private void signup(){
+        System.out.println("\n--- Signup ---");
+        System.out.print("Enter username: ");
+        String regUsername = s.next();
+
+        System.out.print("Enter password: ");
+        String regPassword = s.next();
+
+
+
+
+
+        // Create the account object inline
+        Account newAccount = new Account(regUsername, regPassword);
+        accountService.createAccount(newAccount);
+
+        if (newAccount == null){
+            System.out.println("Account failed to create,username already exists ");
+        }
+
+        System.out.println("Account created successfully");
+        mainProfile(newAccount);
+    }
+
+    private void mainProfile(Account account){
+        System.out.println("---- Choose one of the Servicess :------");
+        System.out.println("1.Deposit   2.Withdraw     3. Transfer   4. Show Balance   5. Show Details  6. Change Password    7. Logout  ");
     }
 }
