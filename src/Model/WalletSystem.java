@@ -16,5 +16,6 @@ public class WalletSystem {
     public void setAccounts(List<Account> accounts) {
         this.accounts = accounts;
     }
-}
 
+
+}

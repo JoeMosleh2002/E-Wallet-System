@@ -4,27 +4,22 @@ public class Account {
     private String username;
     private  String password;
     private double balance;
-    private String getEmail;
+    private String email;
+    private int age;
+    private String phoneNumber;
 
-    public Account(String username, String password, String getEmail, int age, String phoneNumber, String email) {
+    public Account(String username, String password, int age, String email,String PhoneNumber) {
         this.username = username;
         this.password = password;
-        this.getEmail = getEmail;
+        this.email = email;
         this.age = age;
-        this.phoneNumber = phoneNumber;
+        this.phoneNumber = PhoneNumber;
         this.email = email;
     }
 
-    public Account(String regUsername, String regPassword, int age, String email, String phoneNumber) {
-    }
 
-    public String getGetEmail() {
-        return getEmail;
-    }
 
-    public void setGetEmail(String getEmail) {
-        this.getEmail = getEmail;
-    }
+
 
     public String getEmail() {
         return email;
@@ -50,8 +45,6 @@ public class Account {
         this.phoneNumber = phoneNumber;
     }
 
-    private int age;
-    private String phoneNumber;
 
     public Account(String username, String password) {
         this.username = username;
@@ -59,17 +52,9 @@ public class Account {
         this.balance = 0;
     }
 
-    private  String email;
 
-    public Account(String username, String password, String getEmail, double balance, int age, String email, String phoneNumber) {
-        this.username = username;
-        this.password = password;
-        this.getEmail = getEmail;
-        this.balance = balance;
-        this.age = age;
-        this.email = email;
-        this.phoneNumber = phoneNumber;
-    }
+
+
 
     public String getUsername() {
         return username;

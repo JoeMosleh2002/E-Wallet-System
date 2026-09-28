@@ -2,7 +2,10 @@ package service;
 
 import Model.Account;
 import Model.WalletSystem;
+import enums.DepositStatus;
+import enums.WithdrawStatus;
 
+import javax.crypto.DecapsulateException;
 import java.util.Optional;
 
 public class AccountServiceImpl implements AccountService{
@@ -16,6 +19,7 @@ public class AccountServiceImpl implements AccountService{
        }
        else {
            walletSystem.getAccounts().add(account);
+           System.out.println(walletSystem.getAccounts());
            return account;
        }
     }
@@ -34,28 +38,55 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
-    public void deposit(Account account, double amount) {
+    public DepositStatus deposit(Account account, double amount) throws IllegalArgumentException {
 
-        if(amount <=0){
-            throw new IllegalArgumentException("Deposit amount must be greater than zero");
+        // 1. Make sure account exists
+        // 2. Make sure amount does not exceed 12000
+        // 3. min deposit is no less than 100
+        // 4. Deposit functionality
+
+        Optional <Account> existAccount = walletSystem.getAccounts().stream().filter(acc-> acc.getUsername().equals(account.getUsername())).findFirst();
+        if (existAccount.isEmpty()){
+            return DepositStatus.ACCOUNT_NOT_EXIST;
+
+        }
+
+        if(amount > 12000){
+            return DepositStatus.AMOUNT_GREATER_THAN_MAX;
+        }
+
+        if (amount <= 100){
+            return DepositStatus.AMOUNT_LESS_THAN_MIN;
         }
 
 
 
-            double balance = account.getBalance();
-            account.setBalance(balance + amount);
+            double currentBalance = existAccount.get().getBalance();
+            existAccount.get().setBalance(currentBalance + amount);
+            return DepositStatus.SUCCESS;
 
     }
 
     @Override
-    public void withdraw(Account account, double amount) {
+    public WithdrawStatus withdraw(Account account, double amount) throws IllegalArgumentException {
 
-        double currentBalance = account.getBalance();
+        Optional <Account> existedAccount = walletSystem.getAccounts().stream().filter(acc-> acc.getUsername().equals(account.getUsername())).findFirst();
+        double currentBalance = existedAccount.get().getBalance();
 
-        if (amount <= 0) throw new IllegalArgumentException("Amount must be greater than zero ");
-        if (amount > currentBalance) throw new IllegalArgumentException("Insufficient Funds");
+        if (existedAccount.isEmpty()) return WithdrawStatus.ACCOUNT_NOT_FOUND;
+        if(amount >8000) return WithdrawStatus.EXCEEDS_MAX_LIMIT;
+        if (amount <=100) return WithdrawStatus.BELOW_MIN_LIMIT;
+        if (amount > currentBalance) return WithdrawStatus.INSUFFICIENT_FUNDS;
 
-        account.setBalance(currentBalance - amount);
+
+        else{
+            existedAccount.get().setBalance(currentBalance - amount);
+            return WithdrawStatus.SUCCESS;
+        }
+
+
+
+
     }
 
     @Override
