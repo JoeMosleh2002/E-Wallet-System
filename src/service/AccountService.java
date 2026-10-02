@@ -2,6 +2,7 @@ package service;
 
 import Model.Account;
 import enums.DepositStatus;
+import enums.TransferStatus;
 import enums.WithdrawStatus;
 
 public interface AccountService {
@@ -11,7 +12,7 @@ public interface AccountService {
 
     DepositStatus deposit (Account account , double amount);
     WithdrawStatus withdraw (Account account, double amount);
-    void transfer (Account sender,double amount, Account receiver);
+    TransferStatus transfer (Account sender, double amount, Account receiver);
     Account getAccountByUsername(String username);
     double getBalance (Account account);
 }

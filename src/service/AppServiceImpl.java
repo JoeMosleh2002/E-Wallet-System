@@ -4,6 +4,7 @@ import Model.Account;
 import Model.WalletSystem;
 import enums.DepositStatus;
 import enums.WithdrawStatus;
+import enums.TransferStatus;
 
 import javax.swing.*;
 import java.util.Scanner;
@@ -66,57 +67,81 @@ public class AppServiceImpl implements AppService {
     }
 
     private void login() {
+        int attempts = 0;
+        while (attempts < 4) {
+            System.out.println("\n--- Login ---");
+            System.out.print("Enter username: ");
+            String Username = s.next();
 
-        System.out.println("\n--- Login ---");
-        System.out.print("Enter username: ");
-        String Username = s.next();
-
-        System.out.print("Enter password: ");
-        String Password = s.next();
-
-
-        Account account = new Account(Username, Password);
-        Account existedAccount = accountService.getAccountByUsernameAndPassword(account);
-        if (existedAccount == null) System.out.println("Account does not exist.please check credentials ");
+            System.out.print("Enter password: ");
+            String Password = s.next();
 
 
-        else {
-            System.out.println("Successful Login");
-            mainProfile(existedAccount);
+            Account account = new Account(Username, Password);
+            Account existedAccount = accountService.getAccountByUsernameAndPassword(account);
+            if (existedAccount == null) {
+
+                System.out.println("Account does not exist.please check credentials ");
+                attempts++;
+            }
+
+            else if (!Password.equals(account.getPassword())) {
+
+                System.out.println("Invalid Password");
+
+            }
+
+            else {
+                System.out.println("Successful Login");
+                mainProfile(existedAccount);
+                break;
+            }
+
         }
 
+       if (attempts>=4) System.out.println("Too many attempts. Please contact admin");
     }
 
     // sign up function
     private void signup() {
-        System.out.println("\n--- Signup ---");
-        System.out.print("Enter username: ");
-        String regUsername = s.next();
 
-        System.out.print("Enter password: ");
-        String regPassword = s.next();
+        try {
+            System.out.println("\n--- Signup ---");
 
-        System.out.print("Enter age: ");
-        int age = s.nextInt();
+            System.out.print("Enter username: ");
+            String regUsername = s.next();
 
-        System.out.print("Enter email: ");
-        String email = s.next();
+            System.out.print("Enter password: ");
+            String regPassword = s.next();
 
-        System.out.print("Enter phone number: ");
-        String phoneNumber = s.next();
+            System.out.print("Enter age: ");
+            int age = s.nextInt();
 
+            System.out.print("Enter email: ");
+            String email = s.next();
 
-        // Create the account object inline
-        Account newAccount = new Account(regUsername, regPassword, age, email, phoneNumber);
-        Account createdAccount = accountService.createAccount(newAccount);
+            System.out.print("Enter phone number: ");
+            String phoneNumber = s.next();
 
-        if (createdAccount == null) {
-            System.out.println("Account failed to create, username already exists.");
-            return;
+            Account newAccount =
+                    new Account(regUsername, regPassword, age, email, phoneNumber);
+
+            Account createdAccount =
+                    accountService.createAccount(newAccount);
+
+            if (createdAccount == null) {
+                System.out.println(
+                        "Account failed to create, username or phone number already exists."
+                );
+                return;
+            }
+
+            System.out.println("Account created successfully");
+            mainProfile(createdAccount);
+
+        } catch (IllegalArgumentException e) {
+            System.out.println("Signup failed: " + e.getMessage());
         }
-
-        System.out.println("Account created successfully");
-        mainProfile(createdAccount);
     }
 
     private void mainProfile(Account account) {
@@ -139,29 +164,10 @@ public class AppServiceImpl implements AppService {
                     case (2):
 
                         withdraw(account);
+                        break;
 
                     case 3:
-                        System.out.println("Please enter account to transfer:");
-                        String username = s.next();
-
-                        try {
-                            Account receiver = accountService.getAccountByUsername(username);
-
-                            System.out.println("Enter amount to transfer:");
-
-                            if (s.hasNextDouble()) {
-                                double amount = s.nextDouble();
-
-                                accountService.transfer(account, amount, receiver);
-                                System.out.println("Amount transferred successfully");
-                            } else {
-                                System.out.println("Please enter a valid number");
-                                s.next();
-                            }
-
-                        } catch (IllegalArgumentException e) {
-                            System.out.println(e.getMessage());
-                        }
+                        transfer(account);
                         break;
 
                     case 4:
@@ -170,13 +176,14 @@ public class AppServiceImpl implements AppService {
 
 
                     case 5:
-                        System.out.println("\n----- Account Details -----");
-                        System.out.println("Username: " + account.getUsername());
-                        System.out.println("Email: " + account.getEmail());
-                        System.out.println("Phone Number: " + account.getPhoneNumber());
-                        System.out.println("Age: " + account.getAge());
-                        System.out.println("Balance: " + account.getBalance());
+                        showAccountDetails(account);
+
                         break;
+
+
+
+                    case 6: changePassword(account);
+                            break;
 
 
                     case 7:
@@ -217,6 +224,112 @@ public class AppServiceImpl implements AppService {
 
     }
 
+    private void showAccountDetails(Account account) {
+
+        try {
+            Account updatedAccount =
+                    accountService.getAccountByUsername(account.getUsername());
+
+            System.out.println("\n----- Account Details -----");
+            System.out.println("Username: " + updatedAccount.getUsername());
+            System.out.println("Email: " + updatedAccount.getEmail());
+            System.out.println("Phone Number: " + updatedAccount.getPhoneNumber());
+            System.out.println("Age: " + updatedAccount.getAge());
+            System.out.println("Balance: " + updatedAccount.getBalance());
+
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private void transfer(Account sender) {
+
+        System.out.println("Please enter account to transfer:");
+        String username = s.next();
+
+        try {
+            Account receiver = accountService.getAccountByUsername(username);
+
+            System.out.println("Enter amount to transfer:");
+
+            if (!s.hasNextDouble()) {
+                System.out.println("Please enter a valid number");
+                s.next();
+                return;
+            }
+
+            double amount = s.nextDouble();
+
+            TransferStatus status =
+                    accountService.transfer(sender, amount, receiver);
+
+            if (status == TransferStatus.SENDER_NOT_FOUND) {
+                System.out.println("Sender account does not exist");
+            }
+
+            else if (status == TransferStatus.RECEIVER_NOT_FOUND) {
+                System.out.println("Receiver account does not exist");
+            }
+
+            else if (status == TransferStatus.INVALID_AMOUNT) {
+                System.out.println("Transfer amount must be greater than zero");
+            }
+
+            else if (status == TransferStatus.SAME_ACCOUNT) {
+                System.out.println("You cannot transfer money to yourself");
+            }
+
+            else if (status == TransferStatus.INSUFFICIENT_FUNDS) {
+                System.out.println("Insufficient funds");
+            }
+
+            else {
+                System.out.println(
+                        "Transfer successful! Current balance is "
+                                + sender.getBalance()
+                );
+            }
+
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private void changePassword(Account account) {
+
+        System.out.println("Enter current password:");
+        String oldPassword = s.next();
+        if (!oldPassword.equals(account.getPassword())){
+
+            System.out.println("invalid password");
+            return;
+
+        }
+
+        System.out.println("Enter new Password");
+        String newPassword = s.next();
+
+        if (newPassword.equals(account.getPassword())){
+            System.out.println("New Password cannot be the same as old password");
+            return;
+        }
+        try{
+            account.setPassword(newPassword);
+            System.out.println("Password Change Successfully.");
+
+        }
+        catch (IllegalArgumentException e){
+            System.out.println(e.getMessage());
+        }
+        
+
+        
+
+
+    }
+
+
+
 
     private void deposit(Account account) {
 
@@ -238,7 +351,7 @@ public class AppServiceImpl implements AppService {
                 }
 
                 else {
-                    System.out.println("Deposit Successful ! Balance is " + balance);
+                    System.out.println("Deposit Successful ! Balance is " + account.getBalance());
                 }
 
 
@@ -254,13 +367,17 @@ public class AppServiceImpl implements AppService {
     }
 
     private void showBalance(Account account) {
-        account = accountService.getAccountByUsernameAndPassword(account);
-        System.out.println("Current Balance : " + account.getBalance());
+        Account updatedAccount =
+                accountService.getAccountByUsername(account.getUsername());
 
+        System.out.println(
+                "Current Balance: " + updatedAccount.getBalance()
+        );
     }
 
 
     private void withdraw(Account account) {
+        System.out.println("Please enter amount to withdraw:");
         if (s.hasNextDouble()) {
             double amount = s.nextDouble();
 
@@ -272,7 +389,7 @@ public class AppServiceImpl implements AppService {
                else if (balance == WithdrawStatus.INSUFFICIENT_FUNDS) System.out.println("Insufficent funds");
 
                else {
-                   System.out.println("Withdraw Successful! current balance is " + balance);
+                   System.out.println("Withdraw Successful! current balance is " + account.getBalance());
                }
 
 

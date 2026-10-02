@@ -3,25 +3,35 @@ package service;
 import Model.Account;
 import Model.WalletSystem;
 import enums.DepositStatus;
+import enums.TransferStatus;
 import enums.WithdrawStatus;
-
-import javax.crypto.DecapsulateException;
 import java.util.Optional;
 
 public class AccountServiceImpl implements AccountService{
     private WalletSystem walletSystem = new WalletSystem();
-    @Override
 
+
+    @Override
     public Account createAccount(Account account) {
-       boolean isAccountExistwithSameUser =  walletSystem.getAccounts().stream().anyMatch(acc->acc.getUsername().equals(account.getUsername()));
-       if (isAccountExistwithSameUser){
-           return null;
-       }
-       else {
-           walletSystem.getAccounts().add(account);
-           System.out.println(walletSystem.getAccounts());
-           return account;
-       }
+
+        boolean isAccountExistWithSameUser =
+                walletSystem.getAccounts()
+                        .stream()
+                        .anyMatch(acc ->
+                                acc.getUsername().equals(account.getUsername()));
+
+        boolean isAccountExistWithSameNumber =
+                walletSystem.getAccounts()
+                        .stream()
+                        .anyMatch(acc ->
+                                acc.getPhoneNumber().equals(account.getPhoneNumber()));
+
+        if (isAccountExistWithSameUser || isAccountExistWithSameNumber) {
+            return null;
+        }
+
+        walletSystem.getAccounts().add(account);
+        return account;
     }
 
     @Override
@@ -55,7 +65,7 @@ public class AccountServiceImpl implements AccountService{
             return DepositStatus.AMOUNT_GREATER_THAN_MAX;
         }
 
-        if (amount <= 100){
+        if (amount < 100){
             return DepositStatus.AMOUNT_LESS_THAN_MIN;
         }
 
@@ -71,11 +81,11 @@ public class AccountServiceImpl implements AccountService{
     public WithdrawStatus withdraw(Account account, double amount) throws IllegalArgumentException {
 
         Optional <Account> existedAccount = walletSystem.getAccounts().stream().filter(acc-> acc.getUsername().equals(account.getUsername())).findFirst();
-        double currentBalance = existedAccount.get().getBalance();
 
         if (existedAccount.isEmpty()) return WithdrawStatus.ACCOUNT_NOT_FOUND;
+        double currentBalance = existedAccount.get().getBalance();
         if(amount >8000) return WithdrawStatus.EXCEEDS_MAX_LIMIT;
-        if (amount <=100) return WithdrawStatus.BELOW_MIN_LIMIT;
+        if (amount <100) return WithdrawStatus.BELOW_MIN_LIMIT;
         if (amount > currentBalance) return WithdrawStatus.INSUFFICIENT_FUNDS;
 
 
@@ -90,24 +100,48 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
-    public void transfer(Account sender, double amount, Account receiver) {
+    public TransferStatus transfer(Account sender, double amount, Account receiver) {
 
+        Optional<Account> existedSender = walletSystem.getAccounts()
+                .stream()
+                .filter(acc -> acc.getUsername().equals(sender.getUsername()))
+                .findFirst();
 
-        if (amount <= 0) throw new IllegalArgumentException("Amount must be greater than zero ");
-        if (sender == receiver) throw new IllegalArgumentException("Cant transfer funds to self");
+        if (existedSender.isEmpty()) {
+            return TransferStatus.SENDER_NOT_FOUND;
+        }
 
-        double currentBalance = sender.getBalance();
+        Optional<Account> existedReceiver = walletSystem.getAccounts()
+                .stream()
+                .filter(acc -> acc.getUsername().equals(receiver.getUsername()))
+                .findFirst();
 
-        if (amount > currentBalance) throw new IllegalArgumentException("Insufficient Funds");
+        if (existedReceiver.isEmpty()) {
+            return TransferStatus.RECEIVER_NOT_FOUND;
+        }
 
-        double receiverBalance = receiver.getBalance();
+        if (amount <= 0) {
+            return TransferStatus.INVALID_AMOUNT;
+        }
 
-        sender.setBalance(currentBalance-amount);
-        receiver.setBalance(receiverBalance + amount);
+        Account storedSender = existedSender.get();
+        Account storedReceiver = existedReceiver.get();
 
+        if (storedSender.getUsername().equals(storedReceiver.getUsername())) {
+            return TransferStatus.SAME_ACCOUNT;
+        }
 
+        double senderBalance = storedSender.getBalance();
+
+        if (amount > senderBalance) {
+            return TransferStatus.INSUFFICIENT_FUNDS;
+        }
+
+        storedSender.setBalance(senderBalance - amount);
+        storedReceiver.setBalance(storedReceiver.getBalance() + amount);
+
+        return TransferStatus.SUCCESS;
     }
-
     @Override
     public Account getAccountByUsername(String username) {
         Optional<Account> existedAccount = walletSystem.getAccounts().stream().
